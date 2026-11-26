@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0b0d12">
+<title>core.ui</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{margin:0;height:100%;overflow:hidden;background:#000;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overscroll-behavior:none}
+button,input{font:inherit;color:inherit}
+#wall{position:fixed;inset:0;background:#0b0d12}
+#home{position:fixed;inset:0;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top) + 28px) 16px calc(env(safe-area-inset-bottom) + 10px);touch-action:none;will-change:transform,opacity;background:linear-gradient(rgba(0,0,0,.3),transparent 35%,rgba(0,0,0,.45))}
+#time{font-size:76px;font-weight:200;text-align:center;line-height:1;text-shadow:0 2px 14px rgba(0,0,0,.35)}
+#date{text-align:center;margin:8px 0 28px;opacity:.9;text-shadow:0 1px 8px rgba(0,0,0,.4)}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px 4px;align-content:start}
+#hgrid{flex:1}
+.app{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;transition:transform .2s cubic-bezier(.3,1.7,.5,1)}
+.app:active{transform:scale(.88)}
+.ic{width:min(15.5vw,64px);aspect-ratio:1;border-radius:28%;display:grid;place-items:center;position:relative;overflow:hidden;box-shadow:0 6px 16px rgba(0,0,0,.3)}
+.ic b{font-size:26px;font-weight:600}
+.ic img{position:absolute;inset:18%;width:64%;height:64%;object-fit:contain}
+.ic.has{background:#fff!important}.ic.has b{display:none}
+.app span{font-size:12px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.55)}
+#pill{width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,.5);margin:0 auto 10px}
+#dock{display:flex;justify-content:space-around;padding:12px 6px;border-radius:32px;background:rgba(255,255,255,.16)}
+#dock .app span{display:none}
+#scrim{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none}
+#drawer{position:fixed;inset:0;display:flex;flex-direction:column;background:rgba(14,16,22,.95);border-radius:28px 28px 0 0;transform:translate3d(0,100%,0);will-change:transform;padding-top:env(safe-area-inset-top)}
+#dhead{touch-action:none;padding:0 16px 8px}
+#handle{width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,.4);margin:10px auto 14px}
+#srow{display:flex;gap:10px}
+#q{flex:1;min-width:0;border:0;outline:0;border-radius:24px;padding:13px 18px;background:rgba(255,255,255,.12);-webkit-user-select:text;user-select:text}
+#q::placeholder{color:rgba(255,255,255,.55)}
+#add{width:48px;border:0;border-radius:24px;background:#4f8cff;font-size:24px;line-height:1}
+#grid{flex:1;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;padding:16px 8px calc(28px + env(safe-area-inset-bottom))}
+#veil{position:fixed;inset:0;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .25s;z-index:25}
+#veil.on{opacity:1;pointer-events:auto}
+#sheet,#panel{position:fixed;left:0;right:0;z-index:30;background:#171a22;padding:20px 18px;transition:transform .38s cubic-bezier(.2,.9,.25,1)}
+#sheet{bottom:0;border-radius:28px 28px 0 0;transform:translateY(105%);padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+#panel{top:0;border-radius:0 0 28px 28px;transform:translateY(-105%);padding-top:calc(20px + env(safe-area-inset-top))}
+#sheet.open,#panel.open{transform:none}
+h3{margin:0 0 14px;font-size:17px;font-weight:600}
+.btn{display:block;width:100%;border:0;border-radius:16px;padding:14px;margin-top:8px;background:rgba(255,255,255,.1);text-align:left}
+.btn.main{background:#4f8cff;text-align:center;font-weight:600}
+.btn.danger{color:#ff7a7a}
+.fld{width:100%;border:0;outline:0;border-radius:16px;padding:14px;margin-bottom:8px;background:rgba(255,255,255,.1);-webkit-user-select:text;user-select:text}
+small{opacity:.6;display:block;margin:12px 0 8px}
+#wl{display:flex;gap:10px}
+#wl button{width:44px;height:44px;border-radius:28%;border:2px solid transparent}
+#wl button.sel{border-color:#fff}
+@media (prefers-reduced-motion:reduce){.app,#sheet,#panel{transition:none}}
+</style>
+</head>
+<body>
+<div id="wall"></div>
+
+<div id="home">
+  <div id="time"></div><div id="date"></div>
+  <div id="hgrid" class="grid"></div>
+  <div id="pill"></div>
+  <div id="dock"></div>
+</div>
+
+<div id="scrim"></div>
+<div id="drawer">
+  <div id="dhead">
+    <div id="handle"></div>
+    <div id="srow"><input id="q" placeholder="Cari aplikasi" autocomplete="off" enterkeyhint="go"><button id="add" aria-label="Tambah pintasan">+</button></div>
+  </div>
+  <div id="grid" class="grid"></div>
+</div>
+
+<div id="veil"></div>
+<div id="panel">
+  <form id="sf"><input class="fld" id="sq" placeholder="Cari di Google" enterkeyhint="search" autocomplete="off"></form>
+  <small>Wallpaper</small><div id="wl"></div>
+  <button class="btn" id="reset">Atur ulang beranda</button>
+  <small style="text-align:center;margin-bottom:0">Geser ke atas untuk menutup</small>
+</div>
+<div id="sheet"></div>
+
+<script>
+"use strict";
+/* ============ PENGATURAN: ubah aksi gestur di sini ============ */
+const CFG = {
+  down:  () => openPanel(),        // geser ke bawah: panel cepat
+  left:  () => go("tel:"),         // geser ke kiri: telepon
+  right: () => go("sms:")          // geser ke kanan: pesan
+};                                 // geser ke atas: app drawer (tetap)
+const WALLS = [
+  "linear-gradient(160deg,#1b2a6b,#6b2a7a 60%,#d9487d)",
+  "linear-gradient(160deg,#0f2027,#203a43,#2c5364)",
+  "linear-gradient(160deg,#42275a,#734b6d)",
+  "linear-gradient(160deg,#134e5e,#71b280)",
+  "#0b0d12"
+];
+/* ================================================================ */
+const $ = id => document.getElementById(id);
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+const mk = (n, u, f = "") => ({ id: Math.random().toString(36).slice(2, 8), n, u, dock: f.includes("d"), home: f.includes("h") });
+const defaults = () => ({ wall: 0, items: [
+  mk("Telepon","tel:","d"), mk("Pesan","sms:","d"), mk("Google","https://www.google.com","d"), mk("Play Store","https://play.google.com/store","d"),
+  mk("YouTube","https://m.youtube.com","h"), mk("WhatsApp","https://wa.me/","h"), mk("Instagram","https://www.instagram.com","h"), mk("Facebook","https://m.facebook.com","h"),
+  mk("Maps","https://maps.google.com","h"), mk("Gmail","https://mail.google.com","h"), mk("TikTok","https://www.tiktok.com","h"), mk("Telegram","https://web.telegram.org","h"),
+  mk("Spotify","https://open.spotify.com"), mk("X","https://x.com")
+]});
+let S; try { S = JSON.parse(localStorage.getItem("coreui.v1")); } catch (e) {}
+if (!S || !S.items) S = defaults();
+const save = () => { try { localStorage.setItem("coreui.v1", JSON.stringify(S)); } catch (e) {} };
+
+function go(u) {
+  if (/^https?:/.test(u)) { if (!window.open(u, "_blank")) location.href = u; }
+  else location.href = u;
+}
+
+/* ---------- ikon & daftar ---------- */
+function icon(it) {
+  const a = document.createElement("div"); a.className = "app"; a.dataset.id = it.id;
+  const ic = document.createElement("div"); ic.className = "ic";
+  let h = 0; for (const c of it.n) h = (h * 31 + c.charCodeAt(0)) % 360;
+  ic.style.background = `hsl(${h} 55% 42%)`;
+  const b = document.createElement("b"); b.textContent = (it.n[0] || "?").toUpperCase(); ic.append(b);
+  try {
+    if (/^https?:/.test(it.u)) {
+      const im = new Image();
+      im.onload = () => ic.classList.add("has"); im.onerror = () => im.remove();
+      im.src = "https://www.google.com/s2/favicons?sz=128&domain=" + encodeURIComponent(new URL(it.u).hostname);
+      ic.append(im);
+    }
+  } catch (e) {}
+  const s = document.createElement("span"); s.textContent = it.n;
+  a.append(ic, s); return a;
+}
+const fill = (el, l) => el.replaceChildren(...l.map(icon));
+const filtered = () => {
+  const q = $("q").value.trim().toLowerCase();
+  return [...S.items].sort((a, b) => a.n.localeCompare(b.n, "id")).filter(i => i.n.toLowerCase().includes(q));
+};
+function draw() {
+  fill($("hgrid"), S.items.filter(i => i.home));
+  fill($("dock"), S.items.filter(i => i.dock).slice(0, 5));
+  fill($("grid"), filtered());
+  $("wall").style.background = WALLS[S.wall] || WALLS[0];
+}
+$("q").addEventListener("input", () => fill($("grid"), filtered()));
+$("q").addEventListener("keydown", e => { if (e.key === "Enter") { const f = filtered()[0]; if (f) go(f.u); } });
+
+/* ---------- pegas (spring) ---------- */
+function Spring(set, k, c, eps) {
+  let x = 0, v = 0, t = 0, raf = 0, last = 0;
+  const step = n => {
+    const dt = Math.min(.032, (n - last) / 1000); last = n;
+    v += (-k * (x - t) - c * v) * dt; x += v * dt; set(x);
+    if (Math.abs(v) < eps * 2 && Math.abs(x - t) < eps) { x = t; v = 0; set(x); raf = 0; } else raf = requestAnimationFrame(step);
+  };
+  return {
+    snap(n) { cancelAnimationFrame(raf); raf = 0; x = n; v = 0; set(n); },
+    to(n, vel = 0) { t = n; v = vel; if (!raf) { last = performance.now(); raf = requestAnimationFrame(step); } }
+  };
+}
+let P = 0, SX = 0, SY = 0, H = innerHeight, modal = false;
+const home = $("home"), drawer = $("drawer"), scrim = $("scrim");
+function renderH() { const p = clamp(P, 0, 1); home.style.transform = `translate3d(${SX}px,${SY}px,0) scale(${1 - .08 * p})`; home.style.opacity = 1 - p; }
+function renderD() { const p = clamp(P, 0, 1); drawer.style.transform = `translate3d(0,${(1 - p) * H}px,0)`; scrim.style.opacity = .6 * p; renderH(); }
+const dr = Spring(v => { P = v; renderD(); }, 170, 22, .0008);
+const sx = Spring(v => { SX = v; renderH(); }, 260, 20, .05);
+const sy = Spring(v => { SY = v; renderH(); }, 260, 20, .05);
+addEventListener("resize", () => { H = innerHeight; renderD(); });
+
+/* ---------- gestur: atas/bawah/kiri/kanan ---------- */
+let g = null;
+const rub = d => 36 * Math.tanh(d / 108);
+addEventListener("touchstart", e => {
+  if (modal || e.touches.length > 1) { g = null; return; }
+  const t = e.touches[0];
+  g = { x: t.clientX, y: t.clientY, ax: null, s: [], dx: 0, dy: 0, inD: drawer.contains(e.target), grid: e.target.closest("#grid") };
+}, { passive: true });
+addEventListener("touchmove", e => {
+  if (!g) return;
+  const t = e.touches[0], x = t.clientX, y = t.clientY;
+  if (g.ax === null) {
+    const dx = x - g.x, dy = y - g.y;
+    if (Math.hypot(dx, dy) < 8) return;
+    const v = Math.abs(dy) > Math.abs(dx);
+    const take = !g.inD || (v && ((dy > 0 && (!g.grid || g.grid.scrollTop <= 0)) || (P > .001 && P < .999)));
+    if (!take) { g = null; return; }
+    g.ax = v ? "v" : "h"; g.ox = x; g.oy = y; g.base = clamp(P, 0, 1);
+    if (v) dr.snap(g.base);
+  }
+  if (e.cancelable) e.preventDefault();
+  const dx = x - g.ox, dy = y - g.oy, now = performance.now();
+  g.dx = dx; g.dy = dy; g.s.push([now, x, y]);
+  while (g.s.length > 1 && now - g.s[0][0] > 100) g.s.shift();
+  if (g.ax === "v") { dr.snap(clamp(g.base - dy / H, 0, 1)); sy.snap(g.base < .01 && dy > 0 ? rub(dy) : 0); }
+  else sx.snap(rub(dx));
+}, { passive: false });
+function endGesture(cancelled) {
+  if (!g || !g.ax) { g = null; return; }
+  const s = g.s, a = s[0], b = s[s.length - 1] || a;
+  const dt = Math.max(1, b[0] - a[0]) / 1000, vx = (b[1] - a[1]) / dt, vy = (b[2] - a[2]) / dt, { dx, dy, base } = g;
+  if (g.ax === "v") {
+    if (base >= .01 || dy <= 0) {
+      const v = -vy / H, tgt = Math.abs(v) > .35 ? (v > 0 ? 1 : 0) : (P > .5 ? 1 : 0);
+      dr.to(tgt, v);
+      if (!tgt) setTimeout(() => { $("q").value = ""; $("q").blur(); fill($("grid"), filtered()); }, 300);
+    } else if (!cancelled && (dy > 64 || vy > 900)) CFG.down();
+  } else if (!cancelled) {
+    if (dx < -64 || vx < -900) CFG.left(); else if (dx > 64 || vx > 900) CFG.right();
+  }
+  sx.to(0); sy.to(0); g = null;
+}
+addEventListener("touchend", () => endGesture(false));
+addEventListener("touchcancel", () => endGesture(true));
+
+/* ---------- ketuk & tekan lama ---------- */
+let lpT, lp = false, lpPos = [0, 0];
+document.addEventListener("pointerdown", e => {
+  lp = false; const a = e.target.closest(".app"); if (!a || modal) return;
+  lpPos = [e.clientX, e.clientY];
+  lpT = setTimeout(() => { lp = true; if (navigator.vibrate) navigator.vibrate(12); menu(a.dataset.id); }, 450);
+});
+["pointermove", "pointerup", "pointercancel"].forEach(t => document.addEventListener(t, e => {
+  if (t === "pointermove" && Math.hypot(e.clientX - lpPos[0], e.clientY - lpPos[1]) < 10) return;
+  clearTimeout(lpT);
+}));
+document.addEventListener("contextmenu", e => e.preventDefault());
+document.addEventListener("click", e => {
+  const a = e.target.closest(".app"); if (!a) return;
+  if (lp) { lp = false; return; }
+  const it = S.items.find(i => i.id === a.dataset.id); if (it) go(it.u);
+});
+
+/* ---------- panel & lembar bawah ---------- */
+function closeModal() {
+  $("sheet").classList.remove("open"); $("panel").classList.remove("open");
+  $("veil").classList.remove("on"); modal = false; document.activeElement && document.activeElement.blur();
+}
+function openPanel() {
+  const w = $("wl"); w.replaceChildren();
+  WALLS.forEach((bg, i) => {
+    const b = document.createElement("button"); b.style.background = bg; if (i === S.wall) b.className = "sel";
+    b.onclick = () => { S.wall = i; save(); draw(); [...w.children].forEach((c, j) => c.classList.toggle("sel", j === i)); };
+    w.append(b);
+  });
+  modal = true; $("panel").classList.add("open"); $("veil").classList.add("on");
+}
+function sheet(title, build) {
+  const s = $("sheet"); s.replaceChildren();
+  const h = document.createElement("h3"); h.textContent = title; s.append(h);
+  build(s);
+  modal = true; s.classList.add("open"); $("veil").classList.add("on");
+}
+function btn(parent, text, fn, cls = "") {
+  const b = document.createElement("button"); b.className = "btn " + cls; b.textContent = text;
+  b.onclick = fn; parent.append(b); return b;
+}
+function menu(id) {
+  const it = S.items.find(i => i.id === id); if (!it) return;
+  const act = fn => () => { fn(); save(); draw(); closeModal(); };
+  sheet(it.n, s => {
+    btn(s, it.dock ? "Lepas dari dock" : "Pasang di dock", act(() => { it.dock = !it.dock; }));
+    btn(s, it.home ? "Sembunyikan dari beranda" : "Tampilkan di beranda", act(() => { it.home = !it.home; }));
+    btn(s, "Hapus", act(() => { S.items = S.items.filter(i => i !== it); }), "danger");
+    btn(s, "Batal", closeModal);
+  });
+}
+$("add").onclick = () => sheet("Tambah pintasan", s => {
+  const n = Object.assign(document.createElement("input"), { className: "fld", placeholder: "Nama" });
+  const u = Object.assign(document.createElement("input"), { className: "fld", placeholder: "Tautan (https://… atau tel:… atau intent://…)", inputMode: "url" });
+  s.append(n, u);
+  btn(s, "Simpan", () => {
+    let link = u.value.trim(), name = n.value.trim();
+    if (!name || !link) return;
+    if (!/^[a-z][a-z0-9+.-]*:/i.test(link)) link = "https://" + link;
+    S.items.push(mk(name, link, "h")); save(); draw(); closeModal();
+  }, "main");
+  btn(s, "Batal", closeModal);
+});
+$("veil").onclick = closeModal;
+$("sf").onsubmit = e => { e.preventDefault(); const v = $("sq").value.trim(); if (v) { go("https://www.google.com/search?q=" + encodeURIComponent(v)); $("sq").value = ""; closeModal(); } };
+$("reset").onclick = () => { S = defaults(); save(); draw(); closeModal(); };
+let py = 0;
+$("panel").addEventListener("touchstart", e => { py = e.touches[0].clientY; }, { passive: true });
+$("panel").addEventListener("touchend", e => { if (e.changedTouches[0].clientY - py < -40) closeModal(); });
+
+/* ---------- jam ---------- */
+function tick() {
+  const d = new Date();
+  $("time").textContent = d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", hour12: false }).replace(".", ":");
+  $("date").textContent = d.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long" });
+}
+tick(); setInterval(tick, 10000);
+document.addEventListener("visibilitychange", tick);
+draw(); renderD();
+</script>
+</body>
+</html>
